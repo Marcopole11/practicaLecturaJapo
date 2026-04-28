@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Japanese Read Trainer</title>
+<style>
+    body {
+        font-family: sans-serif;
+        text-align: center;
+        margin-top: 40px;
+    }
+
+    #readField, #nextRows{
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.3s ease;
+        font-size: 40px;
+    }
+    #readField[data-direction="magazine"]{
+        transform: translateY(-.5em);
+    }
+    #readField[data-direction="manga"]{
+        flex-direction: row-reverse;
+        justify-content: center;
+    }
+    #readField[data-direction="webpage"][data-shift="small"] {
+		transform: translateX(1em);
+		transition: transform 0s;
+	}
+	#readField[data-direction="webpage"][data-shift="mid"] {
+		transform: translateX(2em);
+		transition: transform 0s;
+	}
+	#readField[data-direction="webpage"][data-shift="large"] {
+		transform: translateX(4em);
+		transition: transform 0s;
+	}
+	#readField[data-direction="magazine"][data-shift] {
+		transform: translateY(.5em);
+		transition: transform 0s;
+	}
+	#readField[data-direction="manga"][data-shift="small"] {
+		transform: translateX(-.8em);
+		transition: transform 0s;
+	}
+	#readField[data-direction="manga"][data-shift="mid"] {
+		transform: translateX(-1em);
+		transition: transform 0s;
+	}
+
+    #readField>div,#nextRows>div{
+        letter-spacing: 15px;
+    }
+    #readField[data-spacing="compact"]>div,
+    [data-spacing="compact"]>#nextRows>div{
+        letter-spacing: 0pt;
+    }
+
+    #readField[data-direction="webpage"]>#lastRow,
+    #readField[data-direction="webpage"]>#nextRows{
+        display: none;
+    }
+    #readField[data-direction="magazine"]>#lastRow{
+        transform: scale(0.8) translateY(.5em);
+    }
+    #readField[data-direction="magazine"]>#nextRows{
+        font-size: 30px;
+    }
+    [data-direction="manga"]>#nextRows{
+        flex-direction: row-reverse;
+    }
+    [data-direction="manga"]>#lastRow,
+    [data-direction="manga"]>#fullRow,
+    [data-direction="manga"]>#nextRows>div{
+           display: flex;
+        flex-direction: column;
+    }
+    [data-direction="manga"]>#lastRow>span,
+    [data-direction="manga"]>#fullRow>span,
+    [data-direction="manga"]>#nextRows>div>span{
+        line-height: 1em;
+    }
+
+    #fullRow {
+        display: inline-block;
+    }
+
+	
+	.hint {
+		cursor: help;
+	}
+
+    #lastRow,.done {
+        color: #bbbbbb;
+    }
+
+    #feedback {
+        width: 200px;
+        height: 40px;
+        margin: 20px auto;
+        background-color: lightgray;
+        border-radius: 6px;
+        transition: background-color 0.2s;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        font-weight: bold;
+        font-size: 20px;
+    }
+
+    input {
+        font-size: 20px;
+        padding: 5px 10px;
+        text-align: center;
+    }
+	
+	#menuToggle {
+		position: fixed;
+		left: 10px;
+		top: 10px;
+		font-size: 24px;
+		padding: 5px 10px;
+		cursor: pointer;
+		z-index: 1000;
+	}
+
+	#sideMenu {
+		position: fixed;
+		left: -260px;
+		top: 0;
+		width: 250px;
+		height: 100%;
+		background: #f3f3f3;
+		border-right: 2px solid #ccc;
+		padding: 20px;
+		transition: left 0.3s ease;
+		overflow-y: auto;
+		z-index: 999;
+	}
+
+	#sideMenu.open {
+		left: 0;
+	}
+
+	#sideMenu h3 {
+		margin-top: 20px;
+		margin-bottom: 5px;
+	}
+
+</style>
+</head>
+<body>
+
+<h2>Práctica de Lectura Japo</h2>
+
+<div id="readField" data-direction="webpage">
+    <div id="lastRow"></div>
+    <div id="fullRow"></div>
+    <div id="nextRows"></div>
+</div>
+<br>
+<input id="answer" type="text" maxlength="3" autofocus />
+
+<div id="feedback">0</div>
+
+<button id="menuToggle">☰</button>
+
+<div id="sideMenu">
+    <h3>Estudio</h3>
+    <label><input type="radio" name="alphabet" value="hira" checked> Hiragana</label><br>
+    <label><input type="radio" name="alphabet" value="kata"> Katakana</label><br>
+    <label><input type="radio" name="alphabet" value="mixed"> Mixto</label>
+
+    <h3>Vista</h3>
+    <label>Separación:</label><br>
+    <select id="spacingMode">
+        <option value="spaced">Espaciado</option>
+        <option value="compact">Continuo</option>
+    </select><br><br>
+
+    <label>Próximo:</label><br>
+    <select id="nextCount">
+        <option>3</option><option>4</option><option selected>5</option>
+        <option>6</option><option>7</option><option>8</option>
+        <option>9</option><option>10</option>
+    </select>
+    <br><br>
+
+    <label>Columnas:</label><br>
+    <select id="columnCount" style="display: none;">
+        <option selected>3</option><option>4</option><option>5</option>
+        <option>6</option><option>7</option>
+    </select>
+
+    <h3>Formato</h3>
+    <label>Tipografía:</label><br>
+    <select id="fontSelect">
+        <option>Noto Sans JP</option>
+        <option>Noto Serif JP</option>
+        <option>Dela Gothic One</option>
+        <option>Kaisei Decol</option>
+        <option>Hachi Maru Pop</option>
+        <option>Potta One</option>
+        <option>Yuji Mai</option>
+        <option>RocknRoll One</option>
+        <option>Yusei Magic</option>
+        <option>Reggae One</option>
+        <option>Stick</option>
+        <option>WDXL Lubrifont JP N</option>
+    </select>
+    <br><br>
+
+    <label>Orientación:</label><br>
+    <select id="directionSelect">
+        <option selected>Webpage</option>
+        <option>Magazine</option>
+        <option>Manga</option>
+    </select>
+</div>
+
+
+<script>
+const hira = [
+    ["あ","a"], ["い","i"], ["う","u"], ["え","e"], ["お","o"],
+
+    ["か","ka"], ["き","ki"], ["く","ku"], ["け","ke"], ["こ","ko"],
+    ["さ","sa"], ["し","shi"], ["す","su"], ["せ","se"], ["そ","so"],
+    ["た","ta"], ["ち","chi"], ["つ","tsu"], ["て","te"], ["と","to"],
+    ["な","na"], ["に","ni"], ["ぬ","nu"], ["ね","ne"], ["の","no"],
+    ["は","ha"], ["ひ","hi"], ["ふ","fu"], ["へ","he"], ["ほ","ho"],
+    ["ま","ma"], ["み","mi"], ["む","mu"], ["め","me"], ["も","mo"],
+    ["や","ya"], ["ゆ","yu"], ["よ","yo"],
+    ["ら","ra"], ["り","ri"], ["る","ru"], ["れ","re"], ["ろ","ro"],
+    ["わ","wa"], ["を","wo"],
+    ["ん","n"],
+
+    // Dakuten
+    ["が","ga"], ["ぎ","gi"], ["ぐ","gu"], ["げ","ge"], ["ご","go"],
+    ["ざ","za"], ["じ","ji"], ["ず","zu"], ["ぜ","ze"], ["ぞ","zo"],
+    ["だ","da"], ["ぢ","ji"], ["づ","zu"], ["で","de"], ["ど","do"],
+    ["ば","ba"], ["び","bi"], ["ぶ","bu"], ["べ","be"], ["ぼ","bo"],
+
+    // Handakuten
+    ["ぱ","pa"], ["ぴ","pi"], ["ぷ","pu"], ["ぺ","pe"], ["ぽ","po"]
+];
+hira.forEach(h => h.push(0));
+
+const kata = [
+    ["ア","a"], ["イ","i"], ["ウ","u"], ["エ","e"], ["オ","o"],
+
+    ["カ","ka"], ["キ","ki"], ["ク","ku"], ["ケ","ke"], ["コ","ko"],
+    ["サ","sa"], ["シ","shi"], ["ス","su"], ["セ","se"], ["ソ","so"],
+    ["タ","ta"], ["チ","chi"], ["ツ","tsu"], ["テ","te"], ["ト","to"],
+    ["ナ","na"], ["ニ","ni"], ["ヌ","nu"], ["ネ","ne"], ["ノ","no"],
+    ["ハ","ha"], ["ヒ","hi"], ["フ","fu"], ["ヘ","he"], ["ホ","ho"],
+    ["マ","ma"], ["ミ","mi"], ["ム","mu"], ["メ","me"], ["モ","mo"],
+    ["ヤ","ya"], ["ユ","yu"], ["ヨ","yo"],
+    ["ラ","ra"], ["リ","ri"], ["ル","ru"], ["レ","re"], ["ロ","ro"],
+    ["ワ","wa"], ["ヲ","wo"],
+    ["ン","n"],
+
+    // Dakuten
+    ["ガ","ga"], ["ギ","gi"], ["グ","gu"], ["ゲ","ge"], ["ゴ","go"],
+    ["ザ","za"], ["ジ","ji"], ["ズ","zu"], ["ゼ","ze"], ["ゾ","zo"],
+    ["ダ","da"], ["ヂ","ji"], ["ヅ","zu"], ["デ","de"], ["ド","do"],
+    ["バ","ba"], ["ビ","bi"], ["ブ","bu"], ["ベ","be"], ["ボ","bo"],
+
+    // Handakuten
+    ["パ","pa"], ["ピ","pi"], ["プ","pu"], ["ペ","pe"], ["ポ","po"]
+];
+kata.forEach(k => k.push(0));
+
+// --- Combinaciones yōon ---
+const combos = {
+    "き": { "ゃ": "kya", "ゅ": "kyu", "ょ": "kyo" },
+    "し": { "ゃ": "sha", "ゅ": "shu", "ょ": "sho" },
+    "ち": { "ゃ": "cha", "ゅ": "chu", "ょ": "cho" },
+    "に": { "ゃ": "nya", "ゅ": "nyu", "ょ": "nyo" },
+    "ひ": { "ゃ": "hya", "ゅ": "hyu", "ょ": "hyo" },
+    "み": { "ゃ": "mya", "ゅ": "myu", "ょ": "myo" },
+    "り": { "ゃ": "rya", "ゅ": "ryu", "ょ": "ryo" },
+    "ぎ": { "ゃ": "gya", "ゅ": "gyu", "ょ": "gyo" },
+    "じ": { "ゃ": "ja",  "ゅ": "ju",  "ょ": "jo"  },
+    "び": { "ゃ": "bya", "ゅ": "byu", "ょ": "byo" },
+    "ぴ": { "ゃ": "pya", "ゅ": "pyu", "ょ": "pyo" },
+	"キ": { "ャ": "kya", "ュ": "kyu", "ョ": "kyo" },
+    "シ": { "ャ": "sha", "ュ": "shu", "ョ": "sho" },
+    "チ": { "ャ": "cha", "ュ": "chu", "ョ": "cho" },
+    "ニ": { "ャ": "nya", "ュ": "nyu", "ョ": "nyo" },
+    "ヒ": { "ャ": "hya", "ュ": "hyu", "ョ": "hyo" },
+    "ミ": { "ャ": "mya", "ュ": "myu", "ョ": "myo" },
+    "リ": { "ャ": "rya", "ュ": "ryu", "ョ": "ryo" },
+    "ギ": { "ャ": "gya", "ュ": "gyu", "ョ": "gyo" },
+    "ジ": { "ャ": "ja",  "ュ": "ju",  "ョ": "jo"  },
+    "ビ": { "ャ": "bya", "ュ": "byu", "ョ": "byo" },
+    "ピ": { "ャ": "pya", "ュ": "pyu", "ョ": "pyo" }
+};
+
+
+let failedOnce = false;
+
+function randomChar() {
+    const alphabet = getActiveAlphabet();
+    return alphabet[Math.floor(Math.random() * alphabet.length)];
+}
+function randomSmallYFor(baseKana) {
+    const options = Object.keys(combos[baseKana]);
+    return options[Math.floor(Math.random() * options.length)];
+}
+function weightedRandomChar() {
+    const lastBeforeShift = pending[pending.length - 1];
+    const alphabet = getActiveAlphabet();
+
+    if (combos[lastBeforeShift[0]] && Math.random() < 0.6) {
+        const small = randomSmallYFor(lastBeforeShift[0]);
+        return [small, combos[lastBeforeShift[0]][small]];
+    }
+    if (Math.random() < 0.1) {
+        let worst = alphabet.reduce((a, b) => a[2] < b[2] ? a : b);
+        return [worst[0], worst[1], worst[2]];
+    }
+    return alphabet[Math.floor(Math.random() * alphabet.length)];
+}
+function randomCharRow() {
+    var result = [randomChar(),randomChar()];
+    var target = parseInt(document.getElementById("nextCount").value);
+    while (result.length < target) result.push(randomChar());
+    return result;
+}
+function getActiveAlphabet() {
+    const mode = document.querySelector('input[name="alphabet"]:checked').value;
+    if (mode === "hira") return hira;
+    if (mode === "kata") return kata;
+    return [...hira, ...kata];
+}
+function playShiftAnimation(isCombo) {
+    const mode = document.getElementById("spacingMode").value;
+    if (direction == "webpage") {
+        if (mode === "compact") {
+            readField.dataset.shift = isCombo ? "mid" : "small";
+        } else {
+            readField.dataset.shift = isCombo ? "large" : "mid";
+        }
+    }
+    else if (direction == "manga") {
+        readField.dataset.shift = mode === "compact" ? "small" : "mid";
+    }
+    else
+        readField.dataset.shift = "up"
+    
+    setTimeout(() => {
+        delete readField.dataset.shift;
+    }, 10);
+}
+function render() {
+    fullRow.innerHTML =
+        done.map(c => `<span class="done">${c}</span>`).join(" ") +
+        " " +
+        pending.map((c, i) => {
+            if (i === 0 && failedOnce) {
+                return `<span class="hint" title="${c[1]}">${c[0]}</span>`;
+            }
+            return `<span>${c[0]}</span>`;
+        }).join(" ");
+}
+function renderFuture(){
+    if(direction=="magazine")
+        nextRows.innerHTML = '<div class="row">'+rowNext[0].map(c => `<span>${c[0]}</span>`).join(" ")+"</div>";
+    else
+        nextRows.innerHTML = rowNext.map(c => `<div class="row">${
+            c.map(cc => `<span>${cc[0]}</span>`).join(" ")
+            }</div>`).join("");
+}
+function renderPastFuture() {
+    lastRow.innerHTML = done.map(c => `<span>${c}</span>`).join(" ");
+    renderFuture();
+}
+
+let pending = randomCharRow();
+let rowNext = [randomCharRow()];
+
+let done = ["ん","ん"];
+let streak = 0;
+let direction = "webpage";
+let columns = 3;
+
+const readField = document.getElementById("readField");
+const lastRow = document.getElementById("lastRow");
+const fullRow = document.getElementById("fullRow");
+const nextRows = document.getElementById("nextRows");
+const input = document.getElementById("answer");
+const feedback = document.getElementById("feedback");
+
+
+document.getElementById("menuToggle").onclick = () => {
+    document.getElementById("sideMenu").classList.toggle("open");
+};
+document.getElementById("nextCount").onchange = () => {
+    const target = parseInt(nextCount.value);
+
+    while (pending.length > target) pending.pop();
+    while (pending.length < target) pending.push(weightedRandomChar());
+
+    render();
+};
+document.getElementById("fontSelect").onchange = () => {
+    const font = fontSelect.value.replace(/ /g, "+");
+
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = `https://fonts.googleapis.com/css2?family=${font}&display=swap`;
+    document.head.appendChild(link);
+
+    readField.style.fontFamily = fontSelect.value;
+};
+document.getElementById("spacingMode").onchange = () => {
+    readField.dataset.spacing = spacingMode.value;
+};
+document.getElementById("directionSelect").onchange = () => {
+    direction = directionSelect.value.toLowerCase()
+    readField.dataset.direction = direction;
+    document.getElementById("columnCount").style.display = (direction == "manga")? "":"none";
+    if(direction=="webpage"){
+        while (done.length > 2) done.pop();
+        while (done.length < 2) done.push("ん");
+    }
+
+    render();
+};
+document.getElementById("columnCount").onchange = () => {
+    let extras = parseInt(columnCount.value)-2;
+    console.log(extras);
+    while (rowNext.length > extras) rowNext.pop();
+    while (rowNext.length < extras) rowNext.push(randomCharRow());
+
+    renderFuture();
+};
+
+render();
+renderPastFuture();
+
+input.addEventListener("input", () => {
+    let expected = pending[0][1];
+    let isCombo = false;
+
+    if (pending.length > 1) {
+        const base = pending[0][0];
+        const next = pending[1][0];
+        if (combos[base] && combos[base][next]) {
+            expected = combos[base][next];
+            isCombo = true;
+        }
+    }
+
+    const typed = input.value.toLowerCase();
+    if (typed.length < expected.length) return;
+
+    if (typed === expected) {
+        streak++;
+        feedback.style.backgroundColor = "lightgreen";
+        feedback.textContent = streak;
+		pending[0][2] += 0.2;
+
+        if(direction=="webpage"){
+            playShiftAnimation(isCombo)
+            pending.push(weightedRandomChar());
+            if (isCombo) {
+                pending.push(weightedRandomChar());
+                done = [];
+            } else {
+                done.shift();
+            }
+        }
+        done.push(pending[0][0]);
+        pending.shift();
+        if (isCombo) {
+            done.push(pending[0][0]);
+            pending.push(weightedRandomChar());
+            pending.shift();
+        }
+        if(direction!="webpage" && pending.length==0){
+            pending = rowNext[0];
+            rowNext.shift();
+            rowNext.push(randomCharRow());
+            renderPastFuture();
+            done = [];
+            playShiftAnimation(isCombo)
+        }
+
+		failedOnce = false;
+        render();
+    } else {
+        streak = 0;
+        feedback.style.backgroundColor = "red";
+        feedback.textContent = streak;
+		pending[0][2] += 0.2;
+		failedOnce = true;
+        render();
+    }
+
+    input.value = "";
+});
+</script>
+
+</body>
+</html>
