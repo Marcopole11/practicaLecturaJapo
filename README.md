@@ -9,4 +9,5 @@ I made this app for my own practice but I feel it can be useful for other users.
 
 
 I want to keep this free & opensource for the sake of education, use it for free here:
-[Spanish version](https://www.mabl.icu/jp/practicajapo.html) | [English version]([Spanish version](https://www.mabl.icu/jp/practicejp.html)
+
+[Spanish version](https://www.mabl.icu/jp/practicajapo.html) | [English version](https://www.mabl.icu/jp/practicejp.html)
